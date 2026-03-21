@@ -46,6 +46,11 @@ VITE_SUPABASE_ANON_KEY=codigo_longo_jwt_da_chave_anon_key
 ```bash
 npm run dev
 ```
+
+### 🗝️ Usuário de Testes Injetável (Super-Admin)
+Para facilitar testes da equipe sem a necessidade de criar a hierarquia manual no SQL do Supabase, nós embutimos um atalho de *Seed*. 
+Na tela de **Login**, digite o Parceiro **`9999`** com o PIN **`admin123`**.
+Se esta for a primeira vez que você acessa, o aplicativo se encarregará de criar esse usuário nativamente na Autenticação do Supabase e transformá-lo num `admin_global`, permitindo acesso instantâneo ao Painel Gerencial de Auditoria `/admin` para ver os dados reais.
 A plataforma responderá dinamicamente em `http://localhost:5173`.
 *Dica: Caso a imagem da sua logo (ou da sua empresa cliente) suma da tela de Login, basta arrastar e substituir a imagem `logo.png` na pasta `/public/` do projeto.*
 

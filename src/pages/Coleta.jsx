@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PackageOpen, ScanLine, LogOut, CheckCircle2, ChevronRight, X, Loader2, AlertCircle, Sun, Moon, History } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -16,14 +16,34 @@ export default function Coleta() {
   const [isFinishing, setIsFinishing] = useState(false);
   const [alertMsg, setAlertMsg] = useState('');
   const [manualCode, setManualCode] = useState('');
-  const [showHistory, setShowHistory] = useState(false); // Nova Visão de Histórico!
+  const [showHistory, setShowHistory] = useState(false);
 
-  // Mock Data para a nova tela de histórico do usuário final
-  const historicoMocks = [
-    { data: 'Hoje, 14:30', itens: 3, total: 34.50, status: 'Faturado Sankhya (NFS-0182)' },
-    { data: 'Hoje, 11:15', itens: 1, total: 12.00, status: 'Aguardando Sincronização Cloud' },
-    { data: 'Ontem, 16:45', itens: 5, total: 89.90, status: 'Faturado Sankhya (NFS-0105)' },
-  ];
+  // BASE DE DADOS VIVA (SUPABASE)
+  const [historico, setHistorico] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Gatilho Ativo: Busca faturamentos reais se o modal de Histórico abrir
+  useEffect(() => {
+    if(!showHistory) return;
+    async function fetchHistorico() {
+      setLoadingHistory(true);
+      try {
+         const { data: session } = await supabase.auth.getSession();
+         if(!session?.session?.user) return;
+         
+         const { data } = await supabase.from('compras_cabecalho').select('*, compras_itens(quantidade, preco_unitario)').order('criado_em', { ascending: false }).limit(25);
+         if(data) {
+            setHistorico(data.map(o => {
+                const total = o.compras_itens ? o.compras_itens.reduce((ac, i) => ac + (i.quantidade * i.preco_unitario), 0) : 0;
+                const itens = o.compras_itens ? o.compras_itens.reduce((ac, i) => ac + i.quantidade, 0) : 0;
+                return { data: new Date(o.criado_em).toLocaleString(), itens, total, status: o.status_sync };
+            }));
+         }
+      } catch(e) { console.error(e); }
+      setLoadingHistory(false);
+    }
+    fetchHistorico();
+  }, [showHistory]);
 
   useBarcode(async (barcode) => {
     if (isProcessingCode || isFinishing || showHistory) return; // Nao lemos barcodes na tela de historico
@@ -141,7 +161,10 @@ export default function Coleta() {
                <History color="var(--accent)"/> Acompanhamento de Faturamentos Autorizados
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {historicoMocks.map((hist, idx) => (
+              {loadingHistory && <p style={{color: 'var(--text-muted)'}}>Rebuscando arquivos mortos na Nuvem Sankhya...</p>}
+              {!loadingHistory && historico.length === 0 && <p style={{color: 'var(--text-main)', fontSize: '18px'}}>Nenhum faturamento registrado em seu código de acesso em nossa base local.</p>}
+              
+              {historico.map((hist, idx) => (
                 <div key={idx} style={{ 
                   padding: '24px', background: 'var(--card-bg)', border: '1px solid var(--border)', 
                   borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' 

@@ -1,49 +1,73 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, FileText, Settings, Users, LogOut, TrendingUp, ArrowUpRight, Package, Database, Edit, Trash2, Terminal } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { tenantConfig } from '../config/tenant';
+import { supabase } from '../lib/supabase';
 
 export default function AdminDashboard() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  /* MOCKS - INDICADORES E RELATORIOS */
-  const kpis = [
-    { title: "Compras Hoje", value: "24", trend: "+12%" },
-    { title: "Itens Bipados", value: "156", trend: "+5%" },
-    { title: "Faturamento Pendente", value: "R$ 4.250,00", trend: "+20%" }
-  ];
+  const [kpis, setKpis] = useState([{ title: "Compras Cadastradas", value: "-", trend: "" }, { title: "Pedidos Hoje", value: "-", trend: "" }, { title: "Faturamento Sync", value: "-", trend: "" }]);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [produtosTop, setProdutosTop] = useState([]);
+  const [operators, setOperators] = useState([]);
+  const [systemLogs, setSystemLogs] = useState([]);
+  
+  // ============================================
+  // BUSCA REAL-TIME DOS DADOS OFICIAIS NA NUVEM
+  // ============================================
+  useEffect(() => {
+    async function fetchProductionData() {
+      try {
+          // Valida a sessão de Auth (Impede que hackers sem login abram a dashboard)
+          const { data: userSession } = await supabase.auth.getSession();
+          if(!userSession?.session) return navigate('/');
 
-  const recentOrders = [
-    { id: "NFS-0012", operario: "João (50409)", data: "Hoje, 14:30", itens: 4, total: "R$ 150,00", status: "Sincronizado" },
-    { id: "NFS-0013", operario: "Maria (50410)", data: "Hoje, 15:15", itens: 1, total: "R$ 45,00", status: "Pendente" },
-  ];
+          // 1. Operadores Oficiais Cadastrados
+          const { data: ops } = await supabase.from('parceiros_usuarios').select('*');
+          if (ops) setOperators(ops.map(o => ({ nome: o.nome || 'Lojista', codigo: o.id_sankhya, cargo: o.nivel_acesso === 'gestor' ? 'Gestor Regional' : o.nivel_acesso === 'admin_global' ? 'Super Admin (Dono)' : 'Operador Caixa', status: 'Ativo' })));
 
-  const produtosTop = [
-    { nome: "Coca Cola 2L", vendas: 342, receita: "R$ 3.420,00" },
-    { nome: "Bolo de Pote Ninho", vendas: 215, receita: "R$ 1.250,00" },
-    { nome: "Salgado Assado Frango", vendas: 180, receita: "R$ 1.800,00" },
-    { nome: "Suco Laranja Integral", vendas: 120, receita: "R$ 840,00" },
-  ];
+          // 2. Logs da Arquitetura do Sistema
+          const { data: logs } = await supabase.from('sistema_logs').select('*').order('criado_em', { ascending: false }).limit(20);
+          if (logs) setSystemLogs(logs.map(l => ({ data: new Date(l.criado_em).toLocaleTimeString(), nivel: l.nivel, origem: l.origem, mensagem: l.mensagem })));
 
-  /* NÓVO MOCK - OPERADORES (CADA EMPRESA TEM OS SEUS) */
-  const operators = [
-    { nome: "João Silva", codigo: "50409", cargo: "Operador", status: "Ativo" },
-    { nome: "Maria Oliveira", codigo: "50410", cargo: "Operador", status: "Ativo" },
-    { nome: "Carlos Souza", codigo: "50415", cargo: "Gestor", status: "Ativo" },
-    { nome: "Ana Costa", codigo: "50422", cargo: "Operador", status: "Bloqueado" }
-  ];
+          // 3. Faturamentos (Compras e Tabelas Relacionais do Carrinho)
+          const { data: comp } = await supabase.from('compras_cabecalho').select('*, compras_itens(quantidade, preco_unitario)').order('criado_em', { ascending: false }).limit(50);
+          if (comp) {
+             setRecentOrders(comp.map(c => {
+                const sumItens = c.compras_itens?.reduce((acc, i) => acc + i.quantidade, 0) || 0;
+                const sumVal = c.compras_itens?.reduce((acc, i) => acc + (i.quantidade * i.preco_unitario), 0) || 0;
+                return {
+                  id: c.id, operario: c.cod_parceiro, data: new Date(c.criado_em).toLocaleString(),
+                  itens: sumItens, total: `R$ ${sumVal.toFixed(2)}`, status: c.status_sync
+                };
+             }).slice(0, 10)); // pega apenas as 10 mais recentes na primeira tela
 
-  /* NÓVO MOCK - LOGS E AUDITORIA DO SISTEMA */
-  const systemLogs = [
-    { data: "Hoje, 14:48:12", nivel: "ERROR", origem: "SyncSankhya", mensagem: "Falha de Autenticação MGE: Token Inválido na URL ou Usuário Bloqueado pelo AD." },
-    { data: "Hoje, 14:42:01", nivel: "INFO",  origem: "AppColeta",   mensagem: "Usuário 50409 (João Silva) iniciou um novo carrinho de coletas." },
-    { data: "Hoje, 14:30:55", nivel: "INFO",  origem: "SyncSankhya", mensagem: "Lote de 4 notas alocadas com sucesso no Servidor Oracle ERP. (NFS-0012)" },
-    { data: "Hoje, 14:15:30", nivel: "WARN",  origem: "AppColeta",   mensagem: "Tentativa de leitura de código inexistente '123' ignorada após 3 bipes." },
-    { data: "Hoje, 09:00:22", nivel: "INFO",  origem: "SistemaAuth", mensagem: "Logon do Gestor Administrativo efetuado com sucesso." }
-  ];
+             const hoje = new Date().toLocaleDateString();
+             const vendasHoje = comp.filter(c => new Date(c.criado_em).toLocaleDateString() === hoje);
+             
+             setKpis([
+                { title: "Volume de Fila Acumulado", value: comp.length.toString(), trend: "Todas" },
+                { title: "Cestas P/ Faturar Hoje", value: vendasHoje.length.toString(), trend: "Diário" },
+                { title: "NFS Sincronizadas na Nuvem", value: comp.filter(c => c.status_sync !== 'pendente').length.toString(), trend: "Cloud (MGE)" }
+             ]);
+          }
+
+          // 4. Produtos Top (Substitui Mock pela realidade da API num futuro patch analítico)
+          setProdutosTop([
+            { nome: "Coca Cola 2L", vendas: 342, receita: "R$ 3.420,00" },
+            { nome: "Bolo de Pote Ninho", vendas: 215, receita: "R$ 1.250,00" }
+          ]);
+
+      } catch(e) {
+          console.error("Erro fatal ao carregar métricas Admin:", e);
+      }
+    }
+    fetchProductionData();
+  }, [navigate]);
 
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: 'var(--bg-color)' }}>
