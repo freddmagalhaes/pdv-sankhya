@@ -36,6 +36,15 @@ export default function AdminDashboard() {
     { nome: "Ana Costa", codigo: "50422", cargo: "Operador", status: "Bloqueado" }
   ];
 
+  /* NÓVO MOCK - LOGS E AUDITORIA DO SISTEMA */
+  const systemLogs = [
+    { data: "Hoje, 14:48:12", nivel: "ERROR", origem: "SyncSankhya", mensagem: "Falha de Autenticação MGE: Token Inválido na URL ou Usuário Bloqueado pelo AD." },
+    { data: "Hoje, 14:42:01", nivel: "INFO",  origem: "AppColeta",   mensagem: "Usuário 50409 (João Silva) iniciou um novo carrinho de coletas." },
+    { data: "Hoje, 14:30:55", nivel: "INFO",  origem: "SyncSankhya", mensagem: "Lote de 4 notas alocadas com sucesso no Servidor Oracle ERP. (NFS-0012)" },
+    { data: "Hoje, 14:15:30", nivel: "WARN",  origem: "AppColeta",   mensagem: "Tentativa de leitura de código inexistente '123' ignorada após 3 bipes." },
+    { data: "Hoje, 09:00:22", nivel: "INFO",  origem: "SistemaAuth", mensagem: "Logon do Gestor Administrativo efetuado com sucesso." }
+  ];
+
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: 'var(--bg-color)' }}>
       {/* Menu Lateral da Empresa */}
