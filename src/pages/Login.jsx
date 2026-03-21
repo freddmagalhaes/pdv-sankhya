@@ -31,7 +31,7 @@ export default function Login() {
          // Se der erro, é porque o Gestor Master ainda não existe. Vamos forçar a criação no Supabase!
          if (signInErr) {
              const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({ email: fakeEmailForAdmin, password });
-             if (signUpErr) throw new Error("Falha Crítica ao autorizar Token de Infraestrutura.");
+             if (signUpErr) throw new Error(`Login Dito: ${signInErr.message}. E Cadastro Dito: ${signUpErr.message}`);
              
              if(signUpData?.user) {
                  // Insere a referência do parceiro. Obs: Só vai funcionar se você desabilitar temporariamente
@@ -71,9 +71,9 @@ export default function Login() {
       }
     } catch (err) {
       console.error(err);
-      setErrorMsg("Ocorreu um erro no servidor Cloud. Tente Novamente.");
+      setErrorMsg(`Bloqueado: ${err.message || 'Falha de comunicação'}`);
     } finally {
-      if(partnerCode !== '9999') setLoading(false);
+      setLoading(false);
     }
   };
 
