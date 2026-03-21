@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FileText, Settings, Users, LogOut, TrendingUp, ArrowUpRight, Package, Database, Edit, Trash2 } from 'lucide-react';
+import { LayoutDashboard, FileText, Settings, Users, LogOut, TrendingUp, ArrowUpRight, Package, Database, Edit, Trash2, Terminal } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { tenantConfig } from '../config/tenant';
 
@@ -65,6 +65,9 @@ export default function AdminDashboard() {
           <button className={`admin-nav-btn ${activeTab === 'operadores' ? 'active' : ''}`} onClick={() => setActiveTab('operadores')}>
             <Users size={20}/> Parceiros/Equipe
           </button>
+          <button className={`admin-nav-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>
+            <Terminal size={20}/> Auditoria (Logs)
+          </button>
           <button className={`admin-nav-btn ${activeTab === 'integracao' ? 'active' : ''}`} onClick={() => setActiveTab('integracao')} style={{ borderTop: '1px solid var(--border)', borderRadius: 0, marginTop: '8px', paddingTop: '16px' }}>
             <Database size={20}/> Integração Sankhya
           </button>
@@ -97,6 +100,7 @@ export default function AdminDashboard() {
                {activeTab === 'dashboard' ? 'Resultados Gerais' : 
                 activeTab === 'relatorios' ? 'Relatórios de Inteligência' : 
                 activeTab === 'operadores' ? 'Controle de Operadores' : 
+                activeTab === 'logs' ? 'Monitoramento e Diagnóstico' : 
                 activeTab === 'integracao' ? 'Configuração Contábil (ERP)' : 'Administração'}
             </h1>
             <p style={{ margin: '8px 0 0 0', color: 'var(--text-muted)' }}>Administração Local de {tenantConfig.companyName}</p>
@@ -244,7 +248,55 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* 4. CHAVES DE INTEGRAÇÃO DO ERP PARA ESTA EMPRESA */}
+        {/* 4. AUDITORIA E LOGS (SUPER ADMIN / GESTOR) */}
+        {activeTab === 'logs' && (
+          <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
+              <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)' }}>
+                <div>
+                  <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                     <Terminal size={20} color="var(--accent)"/> Log de Rastreamento Transparente
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>Atividade detalhada de operadores e retornos do banco Oracle/Sankhya.</p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '14px' }}>Limpar Tela</button>
+                  <button className="btn" style={{ padding: '8px 16px', fontSize: '14px', color: 'var(--btn-text)' }}>Exportar .CSV</button>
+                </div>
+              </div>
+              
+              <div style={{ padding: '24px', background: 'var(--panel-bg)'}}>
+                 <div style={{ 
+                    background: '#0a0a0a', border: '1px solid #333', borderRadius: '12px',
+                    fontFamily: 'monospace', padding: '16px', overflowY: 'auto', maxHeight: '500px',
+                    display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.5)'
+                 }}>
+                    {systemLogs.map((log, i) => (
+                      <div key={i} style={{ 
+                         display: 'flex', gap: '16px', fontSize: '13px', 
+                         paddingBottom: '8px', borderBottom: i === systemLogs.length-1 ? 'none' : '1px solid #222',
+                         color: '#ccc', lineHeight: 1.6
+                      }}>
+                         <span style={{ color: '#666', minWidth: '140px' }}>[{log.data}]</span>
+                         <span style={{ minWidth: '90px' }}>
+                           <span style={{ 
+                             display: 'inline-block', width: '60px', textAlign: 'center',
+                             background: log.nivel === 'ERROR' ? 'rgba(239, 68, 68, 0.2)' : log.nivel === 'WARN' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(34, 197, 94, 0.2)',
+                             color: log.nivel === 'ERROR' ? '#ef4444' : log.nivel === 'WARN' ? '#eab308' : '#22c55e',
+                             padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', fontSize: '11px', letterSpacing: '1px'
+                           }}>
+                             {log.nivel}
+                           </span>
+                         </span>
+                         <span style={{ color: '#8b5cf6', minWidth: '110px', fontWeight: 600 }}>{log.origem}</span>
+                         <span style={{ color: log.nivel === 'ERROR' ? '#ef4444' : '#e5e5e5' }}>{log.mensagem}</span>
+                      </div>
+                    ))}
+                 </div>
+              </div>
+          </div>
+        )}
+
+        {/* 5. CHAVES DE INTEGRAÇÃO DO ERP PARA ESTA EMPRESA */}
         {activeTab === 'integracao' && (
           <div className="glass-panel" style={{ padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '32px' }}>
