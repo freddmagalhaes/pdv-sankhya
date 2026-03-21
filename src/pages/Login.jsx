@@ -38,7 +38,7 @@ export default function Login() {
                  // o RLS de insert da tabela public.parceiros_usuarios no seu painel DB!
                  await supabase.from('parceiros_usuarios').insert({
                      id: signUpData.user.id,
-                     cod_parceiro: '9999',
+                     codigo_parceiro_sankhya: 9999,
                      nome: 'Sankhya Administrador (Seed)',
                      nivel_acesso: 'admin_global'
                  });
