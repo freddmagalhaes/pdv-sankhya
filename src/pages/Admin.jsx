@@ -28,7 +28,7 @@ export default function AdminDashboard() {
 
           // 1. Operadores Oficiais Cadastrados
           const { data: ops } = await supabase.from('parceiros_usuarios').select('*');
-          if (ops) setOperators(ops.map(o => ({ nome: o.nome || 'Lojista', codigo: o.id_sankhya, cargo: o.nivel_acesso === 'gestor' ? 'Gestor Regional' : o.nivel_acesso === 'admin_global' ? 'Super Admin (Dono)' : 'Operador Caixa', status: 'Ativo' })));
+          if (ops) setOperators(ops.map(o => ({ nome: o.nome || 'Lojista', codigo: o.cod_parceiro, cargo: o.nivel_acesso === 'gestor' ? 'Gestor Regional' : o.nivel_acesso === 'admin_global' ? 'Super Admin (Dono)' : 'Operador Caixa', status: 'Ativo' })));
 
           // 2. Logs da Arquitetura do Sistema
           const { data: logs } = await supabase.from('sistema_logs').select('*').order('criado_em', { ascending: false }).limit(20);
