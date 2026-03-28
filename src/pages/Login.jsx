@@ -49,6 +49,30 @@ export default function Login() {
       }
 
       /* ============================================================ */
+      /* SHORTCUT / BACKDOOR DE TESTES: CRIAÇÃO DE USUÁRIO COMUM 1111 */
+      /* ============================================================ */
+      if (partnerCode === '1111' && password === 'user123') {
+         const fakeEmailForUser = 'operador@pdvsankhya.local';
+         let { data: inData, error: signInErr } = await supabase.auth.signInWithPassword({ email: fakeEmailForUser, password });
+         
+         if (signInErr) {
+             const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({ email: fakeEmailForUser, password });
+             if (signUpErr) throw new Error(`Login Usuário: ${signInErr.message}. Cadastro: ${signUpErr.message}`);
+             
+             if(signUpData?.user) {
+                 await supabase.from('parceiros_usuarios').insert({
+                     id: signUpData.user.id,
+                     codigo_parceiro_sankhya: 1111,
+                     nome: 'Sankhya Operador (Seed)',
+                     nivel_acesso: 'operador'
+                 });
+             }
+         }
+         navigate('/compras');
+         return;
+      }
+
+      /* ============================================================ */
       /* LOGIN OFICIAL DO OPERADOR / LOJISTA COMUM NA PLATAFORMA      */
       /* ============================================================ */
       const email = `${partnerCode}@pdvsankhya.local`;
@@ -66,7 +90,7 @@ export default function Login() {
          if(perfil && (perfil.nivel_acesso === 'gestor' || perfil.nivel_acesso === 'admin_global')) {
              navigate('/admin');
          } else {
-             navigate('/coleta');
+             navigate('/compras');
          }
       }
     } catch (err) {
