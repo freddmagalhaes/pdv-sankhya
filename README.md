@@ -47,11 +47,21 @@ VITE_SUPABASE_ANON_KEY=codigo_longo_jwt_da_chave_anon_key
 npm run dev
 ```
 
-### 🗝️ Usuário de Testes Injetável (Super-Admin)
-Para facilitar testes da equipe sem a necessidade de criar a hierarquia manual no SQL do Supabase, nós embutimos um atalho de *Seed*. 
-Na tela de **Login**, digite o Parceiro **`9999`** com o PIN **`admin123`**.
-Se esta for a primeira vez que você acessa, o aplicativo se encarregará de criar esse usuário nativamente na Autenticação do Supabase e transformá-lo num `admin_global`, permitindo acesso instantâneo ao Painel Gerencial de Auditoria `/admin` para ver os dados reais.
-A plataforma responderá dinamicamente em `http://localhost:5173`.
+### 🗝️ Usuários de Testes Injetáveis (Seed)
+Para facilitar testes da equipe sem a necessidade de criar a hierarquia manual no SQL do Supabase, nós embutimos atalhos de *Seed*. 
+
+Na tela de **Login** (rota principal do sistema), você pode utilizar as seguintes credenciais para criação e acesso dinâmico:
+- **Super-Admin (Gestor)**: Parceiro **`9999`** com PIN **`admin123`**. Fornece acesso ao Painel Gerencial e Auditoria.
+- **Operador Comum (Lojista)**: Parceiro **`1111`** com PIN **`user123`**. Fornece acesso ao Ponto de Coleta e Scanner.
+
+Se esta for a primeira vez que você acessa com qualquer um destes, o aplicativo se encarregará de criar esse usuário nativamente na Autenticação do Supabase com os níveis de acesso já mastigados (`admin_global` ou `operador`).
+
+### 🛣️ Mapa de Rotas do Sistema
+A aplicação roda por padrão em `http://localhost:5173` e possui a seguinte estrutura de rotas ativa:
+- **`/` (Raiz)**: Tela de Autenticação (Login). Redireciona o usuário pós-login baseado no seu Perfil (`nivel_acesso`).
+- **`/compras`**: Terminal de Coleta inteligente, histórico e fechamento de pedidos.
+- **`/admin`**: Dashboard de Análises Administrativas e logs de Sincronização.
+
 *Dica: Caso a imagem da sua logo (ou da sua empresa cliente) suma da tela de Login, basta arrastar e substituir a imagem `logo.png` na pasta `/public/` do projeto.*
 
 ## 🔒 Arquitetura de Dados (Multicliente)
