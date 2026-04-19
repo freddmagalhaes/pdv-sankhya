@@ -10,7 +10,7 @@ export function useTheme() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('sankhya-theme', theme);
 
-    // Injeção Multi-Tenant (Tema de Cores da Empresa Dinâmico!)
+    // Injeção dinâmica em tempo de execução das propriedades CSS da tenant ativa
     const root = document.documentElement;
     if (theme === 'dark') {
       root.style.setProperty('--accent', tenantConfig.colors.dark.accent);

@@ -1,22 +1,22 @@
 export const tenantConfig = {
-  // Nome da Empresa
+  // Definição do nome da empresa para exibição no front-end
   companyName: "DVL Distribuidora",
   
-  // Caminho da Logo (Colocar a imagem na pasta /public/ do projeto)
+  // Rota do arquivo de logomarca (necessário armazenar o asset na pasta /public/)
   logoUrl: "/logo.png",  
 
-  // Caso a logo tenha textos escuros (como a da DVL), forçar um fundo branco no Container 
-  // ajuda a ficar 100% visível e bonita mesmo se o usuário estiver usando o Tema Dark!
+  // Flag para aplicar fundo branco no container da logo
+  // Solução adotada para manter a legibilidade da logo da DVL quando o tema dark estiver ativo
   forceLightBackgroundForLogo: true,
   
-  // Cores da Identidade Visual da Empresa (Injetadas automaticamente nos painéis e botões)
+  // Configuração da paleta de cores da marca para uso nos componentes de UI (painéis, botões, etc)
   colors: {
     dark: {
-      accent: "#009ca6", // Ciano (dos pontos da DVL) para ter destaque no fundo escuro
+      accent: "#009ca6", // Ciano (referência da marca DVL) para melhor contraste no tema escuro
       accentHover: "#00b5c2"
     },
     light: {
-      accent: "#003f69", // Azul escuro corporativo DVL para o fundo claro
+      accent: "#003f69", // Azul corporativo padrão da empresa utilizado no tema claro
       accentHover: "#00558a"
     }
   }

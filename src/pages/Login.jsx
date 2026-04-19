@@ -22,20 +22,20 @@ export default function Login() {
 
     try {
       /* ============================================================ */
-      /* SHORTCUT / BACKDOOR DE TESTES: CRIAÇÃO DO SUPER ADMIN 9999   */
+      /* SCRIPT DE MOCK: BOOTSTRAP DE CONTA SUPER ADMIN SEED 9999     */
       /* ============================================================ */
       if (partnerCode === '9999' && password === 'admin123') {
          const fakeEmailForAdmin = 'master@pdvsankhya.local';
          let { data: inData, error: signInErr } = await supabase.auth.signInWithPassword({ email: fakeEmailForAdmin, password });
          
-         // Se der erro, é porque o Gestor Master ainda não existe. Vamos forçar a criação no Supabase!
+         // Fallback de autenticação: Cria o profile caso o Gestor Master não exista no schema Auth do Supabase.
          if (signInErr) {
              const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({ email: fakeEmailForAdmin, password });
              if (signUpErr) throw new Error(`Login Dito: ${signInErr.message}. E Cadastro Dito: ${signUpErr.message}`);
              
              if(signUpData?.user) {
-                 // Insere a referência do parceiro. Obs: Só vai funcionar se você desabilitar temporariamente
-                 // o RLS de insert da tabela public.parceiros_usuarios no seu painel DB!
+                 // Injeção de metadados do profile. Require Policy RLS bypass temporário 
+                 // no public.parceiros_usuarios para ambiente de dev!
                  await supabase.from('parceiros_usuarios').insert({
                      id: signUpData.user.id,
                      codigo_parceiro_sankhya: 9999,
@@ -49,7 +49,7 @@ export default function Login() {
       }
 
       /* ============================================================ */
-      /* SHORTCUT / BACKDOOR DE TESTES: CRIAÇÃO DE USUÁRIO COMUM 1111 */
+      /* SCRIPT DE MOCK: BOOTSTRAP DE CONTA OPERADOR SEED 1111        */
       /* ============================================================ */
       if (partnerCode === '1111' && password === 'user123') {
          const fakeEmailForUser = 'operador@pdvsankhya.local';
@@ -73,7 +73,7 @@ export default function Login() {
       }
 
       /* ============================================================ */
-      /* LOGIN OFICIAL DO OPERADOR / LOJISTA COMUM NA PLATAFORMA      */
+      /* ENDPOINT OFICIAL DE AUTENTICAÇÃO JWT PARA SESSÕES NORMAIS    */
       /* ============================================================ */
       const email = `${partnerCode}@pdvsankhya.local`;
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -84,7 +84,7 @@ export default function Login() {
          return;
       }
 
-      // Redirecionamento Dinâmico por Papel (Role)
+      // Routing condicional baseado na role (nível de acesso RBAC) retornada do Supabase
       if(data?.user) {
          const { data: perfil } = await supabase.from('parceiros_usuarios').select('nivel_acesso').eq('id', data.user.id).single();
          if(perfil && (perfil.nivel_acesso === 'gestor' || perfil.nivel_acesso === 'admin_global')) {

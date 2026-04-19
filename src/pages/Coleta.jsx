@@ -18,11 +18,11 @@ export default function Coleta() {
   const [manualCode, setManualCode] = useState('');
   const [showHistory, setShowHistory] = useState(false);
 
-  // BASE DE DADOS VIVA (SUPABASE)
+  // Conexão do SDK cliente via API REST padrão com o Database (Supabase as a Service)
   const [historico, setHistorico] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Gatilho Ativo: Busca faturamentos reais se o modal de Histórico abrir
+  // Side Effect (useEffect): Dispara o data fetching do histórico no mount do modal (showHistory == true)
   useEffect(() => {
     if(!showHistory) return;
     async function fetchHistorico() {
@@ -46,7 +46,7 @@ export default function Coleta() {
   }, [showHistory]);
 
   useBarcode(async (barcode) => {
-    if (isProcessingCode || isFinishing || showHistory) return; // Nao lemos barcodes na tela de historico
+    if (isProcessingCode || isFinishing || showHistory) return; // Trava de concorrência (lock) inibindo buffer sobreposto quando UI bloqueada
     await handleScanProduct(barcode);
   });
 
@@ -116,10 +116,10 @@ export default function Coleta() {
   return (
     <div style={{ display: 'flex', height: '100vh', padding: '16px', gap: '16px' }}>
       
-      {/* Esquerda: Terminal de Leitura OU TELA DE HISTORICO (Toggled) */}
+      {/* Painel Central: View Condicional - Scanner ou Modal de Histórico Pessoal */}
       <div style={{ flex: '7', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         
-        {/* Cabecalho Principal (Topo Esquerdo) */}
+        {/* Componente Header Base / Topbar */}
         <header className="glass-panel" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
              {tenantConfig.logoUrl && (
@@ -139,7 +139,7 @@ export default function Coleta() {
           </div>
           
           <div style={{ display: 'flex', gap: '12px' }}>
-            {/* NOVO: Alternar entre o App de Compras e o Historico da pessoa */}
+            {/* Toggle Switch Component: Intercepta a transição de Layout Histórico <-> AppCarrinho */}
             <button className="btn btn-secondary" onClick={() => setShowHistory(!showHistory)} style={{ color: 'var(--text-main)' }}>
                <History size={18}/> {showHistory ? 'Voltar para Carrinho' : 'Minhas Notas'}
             </button>
@@ -154,7 +154,7 @@ export default function Coleta() {
 
         {showHistory ? (
           /* ===================================== */
-          /* MÓDULO: HISTÓRICO PESSOAL DO USUARIO  */
+          /* COMPONENTE INTERNO: HISTÓRICO RENDER  */
           /* ===================================== */
           <div className="glass-panel" style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
             <h2 style={{ margin: '0 0 32px 0', fontSize: '28px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -190,7 +190,7 @@ export default function Coleta() {
 
         ) : (
           /* ===================================== */
-          /* MÓDULO: SCANNER PADRÃO DO VAREJO      */
+          /* COMPONENTE INTERNO: SCANNER CONTAINER */
           /* ===================================== */
           <div className="glass-panel" style={{ 
             flex: 1, display: 'flex', flexDirection: 'column', 

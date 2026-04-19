@@ -17,24 +17,24 @@ export default function AdminDashboard() {
   const [systemLogs, setSystemLogs] = useState([]);
   
   // ============================================
-  // BUSCA REAL-TIME DOS DADOS OFICIAIS NA NUVEM
+  // DATA FETCHING: SNAPSHOT DA BASE DE PRODUÇÃO
   // ============================================
   useEffect(() => {
     async function fetchProductionData() {
       try {
-          // Valida a sessão de Auth (Impede que hackers sem login abram a dashboard)
+          // Checagem de token JWT (Guarda de rota nativa contra acessos unauthenticated)
           const { data: userSession } = await supabase.auth.getSession();
           if(!userSession?.session) return navigate('/');
 
-          // 1. Operadores Oficiais Cadastrados
+          // 1. Data Fetch: Array de Operadores cadastrados no DB
           const { data: ops } = await supabase.from('parceiros_usuarios').select('*');
           if (ops) setOperators(ops.map(o => ({ nome: o.nome || 'Lojista', codigo: o.codigo_parceiro_sankhya, cargo: o.nivel_acesso === 'gestor' ? 'Gestor Regional' : o.nivel_acesso === 'admin_global' ? 'Super Admin (Dono)' : 'Operador Caixa', status: 'Ativo' })));
 
-          // 2. Logs da Arquitetura do Sistema
+          // 2. Data Fetch: Array de Logs recentes gerados na Edge/Backend
           const { data: logs } = await supabase.from('sistema_logs').select('*').order('criado_em', { ascending: false }).limit(20);
           if (logs) setSystemLogs(logs.map(l => ({ data: new Date(l.criado_em).toLocaleTimeString(), nivel: l.nivel, origem: l.origem, mensagem: l.mensagem })));
 
-          // 3. Faturamentos (Compras e Tabelas Relacionais do Carrinho)
+          // 3. Data Fetching (Join Relacional): Cabecalho x Itens de Faturamentos
           const { data: comp } = await supabase.from('compras_cabecalho').select('*, compras_itens(quantidade, preco_unitario)').order('criado_em', { ascending: false }).limit(50);
           if (comp) {
              setRecentOrders(comp.map(c => {
@@ -44,7 +44,7 @@ export default function AdminDashboard() {
                   id: c.id, operario: c.cod_parceiro, data: new Date(c.criado_em).toLocaleString(),
                   itens: sumItens, total: `R$ ${sumVal.toFixed(2)}`, status: c.status_sync
                 };
-             }).slice(0, 10)); // pega apenas as 10 mais recentes na primeira tela
+             }).slice(0, 10)); // Slicing do array para evitar renderização pesada (limite 10 registros)
 
              const hoje = new Date().toLocaleDateString();
              const vendasHoje = comp.filter(c => new Date(c.criado_em).toLocaleDateString() === hoje);
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
              ]);
           }
 
-          // 4. Produtos Top (Substitui Mock pela realidade da API num futuro patch analítico)
+          // 4. Feature Toggle Analítico: Mocks a serem substituídos pelos aggregates do backend futuramente
           setProdutosTop([
             { nome: "Coca Cola 2L", vendas: 342, receita: "R$ 3.420,00" },
             { nome: "Bolo de Pote Ninho", vendas: 215, receita: "R$ 1.250,00" }
@@ -143,7 +143,7 @@ export default function AdminDashboard() {
           </button>
         </header>
 
-        {/* 1. VISÃO GERAL */}
+        {/* 1. VIEW COMPONENT: DASHBOARD / KPIS GERAIS */}
         {activeTab === 'dashboard' && (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px', marginBottom: '40px' }}>
@@ -192,7 +192,7 @@ export default function AdminDashboard() {
           </>
         )}
 
-        {/* 2. RELATÓRIOS (Curva ABC) */}
+        {/* 2. VIEW COMPONENT: RELATÓRIOS BASEADOS EM CURVA ABC */}
         {activeTab === 'relatorios' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* 3. OPERADORES / EQUIPE (CRIAR E BLOQUEAR ACESSOS DA FRANQUIA) */}
+        {/* 3. VIEW COMPONENT: GERENCIADOR DE ACESSOS RBAC (ROLE-BASED) */}
         {activeTab === 'operadores' && (
           <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
               <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)' }}>
@@ -281,7 +281,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* 4. AUDITORIA E LOGS (SUPER ADMIN / GESTOR) */}
+        {/* 4. VIEW COMPONENT: CONSOLE DE LOGGING E DIAGNÓSTICO (ADMIN) */}
         {activeTab === 'logs' && (
           <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
               <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)' }}>
@@ -329,7 +329,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* 5. CHAVES DE INTEGRAÇÃO DO ERP PARA ESTA EMPRESA */}
+        {/* 5. VIEW COMPONENT: CREDENCIAIS DE INTEGRAÇÃO BACKEND -> ERP */}
         {activeTab === 'integracao' && (
           <div className="glass-panel" style={{ padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '32px' }}>
@@ -370,9 +370,9 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* 5. MODO PANICO E CONFIGURAÇÔES GERAIS */}
+        {/* 6. VIEW COMPONENT: FEATURE FLAGS E MODO TROUBLESHOOTING */}
         {activeTab === 'configs' && (
-           /* Omitindo os codigos antigos para manter focado na MGE, mas ainda existe a aba */
+           /* Componente otimizado para debug na integração MGE (código legado omitido na view local) */
            <div className="glass-panel" style={{ padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
               <h3 style={{ margin: '0 0 32px 0', fontSize: '22px', borderBottom: '1px solid var(--border)', paddingBottom: '16px' }}>
                 Ações do Núcleo

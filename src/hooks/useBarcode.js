@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Hook feito especificamente para capturar a digitação ultra-rápida de Leitores
- * Físicos (USB/Bluetooth), sem precisar ter um input de texto selecionado!
+ * Custom hook desenvolvido para interceptar eventos de input de leitores de código de barras
+ * (USB/Bluetooth), permitindo a leitura sem depender de um elemento de formulário em foco na UI.
  */
 export function useBarcode(onScan) {
   const barcodeBuffer = useRef('');
@@ -10,26 +10,27 @@ export function useBarcode(onScan) {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Não queremos interceptar a digitação se o usuário ativamente clicou num campo de texto (ex: input, textarea)
+      // Evita interceptar o evento keydown caso o foco do usuário esteja em campos de formulário (ex: input, textarea)
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
 
       const currentTime = Date.now();
       const timeSinceLastKey = currentTime - lastKeyTime.current;
       
-      // Leitores cospem números com 10 a 20ms de intervalo. Se demorar mais que 100ms, foi teclado humano normal
+      // Threshold de tempo: leitores de hardware emitem inputs em ~10-20ms. Intervalos maiores que 100ms inferem input de teclado humano.
       if (timeSinceLastKey > 100) { 
         barcodeBuffer.current = '';
       }
       
       lastKeyTime.current = currentTime;
 
-      // Leitores físicos geralmente encerram a bipagem com a tecla "Enter"
+      // Flush do buffer: leitores físicos emitem a tecla "Enter" (CR/LF) no final da leitura do código
       if (e.key === 'Enter') {
         if (barcodeBuffer.current.length >= 3) {
           onScan(barcodeBuffer.current);
           barcodeBuffer.current = '';
         }
-      } else if (e.key.length === 1) { // Só grava coisas de 1 caractere ('a', '1', etc)
+      } else if (e.key.length === 1) { // Concatena no buffer apenas se o payload for um caractere validável
+
         barcodeBuffer.current += e.key;
       }
     };
